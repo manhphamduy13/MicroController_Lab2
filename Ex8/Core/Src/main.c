@@ -1,10 +1,10 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file           : main.c
+ * @brief          : Main program body
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
@@ -51,94 +51,105 @@ void update7SEG(int index);
 /* USER CODE BEGIN 0 */
 
 /* ---------- Software timer ---------- */
-#define TIMER_CYCLE 10          // chu kỳ ngắt TIM2 = 10ms
-#define SCAN_PERIOD 250         // ms mỗi LED 7 đoạn (quét 4 LED ở 1Hz)
+#define TIMER_CYCLE 10 // chu kỳ ngắt TIM2 = 10ms
+#define SCAN_PERIOD 10 // ms mỗi LED 7 đoạn (quét multiplex khoảng 25Hz)
 
-int timer0_counter = 0;
-int timer0_flag = 0;
-int timer1_counter = 0;
-int timer1_flag = 0;
+volatile int timer0_counter = 0;
+volatile int timer0_flag = 0;
+volatile int timer1_counter = 0;
+volatile int timer1_flag = 0;
 
-void setTimer0(int duration) {
-    timer0_counter = duration / TIMER_CYCLE;
-    timer0_flag = 0;
+void setTimer0(int duration)
+{
+  timer0_counter = duration / TIMER_CYCLE;
+  timer0_flag = 0;
 }
 
-void setTimer1(int duration) {
-    timer1_counter = duration / TIMER_CYCLE;
-    timer1_flag = 0;
+void setTimer1(int duration)
+{
+  timer1_counter = duration / TIMER_CYCLE;
+  timer1_flag = 0;
 }
 
-void timer_run(void) {
-    if (timer0_counter > 0) {
-        timer0_counter--;
-        if (timer0_counter == 0) timer0_flag = 1;
-    }
-    if (timer1_counter > 0) {
-        timer1_counter--;
-        if (timer1_counter == 0) timer1_flag = 1;
-    }
+void timer_run(void)
+{
+  if (timer0_counter > 0)
+  {
+    timer0_counter--;
+    if (timer0_counter == 0)
+      timer0_flag = 1;
+  }
+  if (timer1_counter > 0)
+  {
+    timer1_counter--;
+    if (timer1_counter == 0)
+      timer1_flag = 1;
+  }
 }
 
 /* ---------- LED 7 đoạn ---------- */
 // Common anode: bit = 0 -> sáng. Bit0 = a ... bit6 = g
 const uint8_t SEG_CODE[10] = {
-    0x40, 0x79, 0x24, 0x30, 0x19,   // 0 1 2 3 4
-    0x12, 0x02, 0x78, 0x00, 0x10    // 5 6 7 8 9
+    0x40, 0x79, 0x24, 0x30, 0x19, // 0 1 2 3 4
+    0x12, 0x02, 0x78, 0x00, 0x10  // 5 6 7 8 9
 };
 
-void display7SEG(int num) {
-    GPIOB->ODR = (GPIOB->ODR & ~0x007F) | SEG_CODE[num];
+void display7SEG(int num)
+{
+  GPIOB->ODR = (GPIOB->ODR & ~0x007F) | SEG_CODE[num];
 }
 
 const int MAX_LED = 4;
 int index_led = 0;
 int led_buffer[4] = {1, 2, 3, 4};
 
-#define EN_ON   GPIO_PIN_SET     // nối thẳng, mức 1 = bật
-#define EN_OFF  GPIO_PIN_RESET   // mức 0 = tắt
+#define EN_ON GPIO_PIN_RESET // common-anode: mức 0 = bật
+#define EN_OFF GPIO_PIN_SET  // common-anode: mức 1 = tắt
 
-void update7SEG(int index) {
-    // Tắt cả 4 LED trước khi đổi dữ liệu để tránh bóng mờ
-    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9, EN_OFF);
-    switch (index) {
-        case 0:
-            display7SEG(led_buffer[0]);
-            HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, EN_ON);
-            break;
-        case 1:
-            display7SEG(led_buffer[1]);
-            HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, EN_ON);
-            break;
-        case 2:
-            display7SEG(led_buffer[2]);
-            HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, EN_ON);
-            break;
-        case 3:
-            display7SEG(led_buffer[3]);
-            HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, EN_ON);
-            break;
-        default:
-            break;
-    }
+void update7SEG(int index)
+{
+  // Tắt cả 4 LED trước khi đổi dữ liệu để tránh bóng mờ
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9, EN_OFF);
+  switch (index)
+  {
+  case 0:
+    display7SEG(led_buffer[0]);
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6, EN_ON);
+    break;
+  case 1:
+    display7SEG(led_buffer[1]);
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_7, EN_ON);
+    break;
+  case 2:
+    display7SEG(led_buffer[2]);
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, EN_ON);
+    break;
+  case 3:
+    display7SEG(led_buffer[3]);
+    HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, EN_ON);
+    break;
+  default:
+    break;
+  }
 }
 
 /* ---------- Đồng hồ ---------- */
 int hour = 15, minute = 8, second = 50;
 
-void updateClockBuffer(void) {
-    led_buffer[0] = hour / 10;
-    led_buffer[1] = hour % 10;
-    led_buffer[2] = minute / 10;
-    led_buffer[3] = minute % 10;
+void updateClockBuffer(void)
+{
+  led_buffer[0] = hour / 10;
+  led_buffer[1] = hour % 10;
+  led_buffer[2] = minute / 10;
+  led_buffer[3] = minute % 10;
 }
 
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
 
@@ -177,32 +188,38 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  // Quét LED 7 đoạn
-	      if (timer1_flag == 1) {
-	          setTimer1(SCAN_PERIOD);
-	          update7SEG(index_led++);
-	          if (index_led >= MAX_LED) index_led = 0;
-	      }
+    // Quét LED 7 đoạn
+    if (timer1_flag == 1)
+    {
+      setTimer1(SCAN_PERIOD);
+      update7SEG(index_led++);
+      if (index_led >= MAX_LED)
+        index_led = 0;
+    }
 
-	      // Đồng hồ + DOT mỗi giây
-	      if (timer0_flag == 1) {
-	          setTimer0(1000);
-	          HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
+    // Đồng hồ + DOT mỗi giây
+    if (timer0_flag == 1)
+    {
+      setTimer0(1000);
+      HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_4);
 
-	          second++;
-	          if (second >= 60) {
-	              second = 0;
-	              minute++;
-	          }
-	          if (minute >= 60) {
-	              minute = 0;
-	              hour++;
-	          }
-	          if (hour >= 24) {
-	              hour = 0;
-	          }
-	          updateClockBuffer();
-	      }
+      second++;
+      if (second >= 60)
+      {
+        second = 0;
+        minute++;
+      }
+      if (minute >= 60)
+      {
+        minute = 0;
+        hour++;
+      }
+      if (hour >= 24)
+      {
+        hour = 0;
+      }
+      updateClockBuffer();
+    }
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -211,17 +228,17 @@ int main(void)
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
@@ -232,9 +249,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
@@ -247,10 +263,10 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief TIM2 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM2 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM2_Init(void)
 {
 
@@ -288,14 +304,13 @@ static void MX_TIM2_Init(void)
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
-
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -308,19 +323,17 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4|GPIO_PIN_5, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_4 | GPIO_PIN_5, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6|GPIO_PIN_7|GPIO_PIN_8|GPIO_PIN_9, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3
-                          |GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : PA4 PA5 PA6 PA7
                            PA8 PA9 */
-  GPIO_InitStruct.Pin = GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6|GPIO_PIN_7
-                          |GPIO_PIN_8|GPIO_PIN_9;
+  GPIO_InitStruct.Pin = GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -328,8 +341,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pins : PB0 PB1 PB2 PB3
                            PB4 PB5 PB6 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_2|GPIO_PIN_3
-                          |GPIO_PIN_4|GPIO_PIN_5|GPIO_PIN_6;
+  GPIO_InitStruct.Pin = GPIO_PIN_0 | GPIO_PIN_1 | GPIO_PIN_2 | GPIO_PIN_3 | GPIO_PIN_4 | GPIO_PIN_5 | GPIO_PIN_6;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -343,16 +355,17 @@ static void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
-    if (htim->Instance == TIM2) {
-        timer_run();
-    }
+  if (htim->Instance == TIM2)
+  {
+    timer_run();
+  }
 }
 /* USER CODE END 4 */
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
@@ -365,12 +378,12 @@ void Error_Handler(void)
 }
 #ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
