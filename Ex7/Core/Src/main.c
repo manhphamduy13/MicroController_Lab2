@@ -49,9 +49,8 @@ void update7SEG(int index);
 
 /* Private user code --------------------------------------------------------- */
 /* USER CODE BEGIN 0 */
-
 /* ---------- Software timer ---------- */
-#define TIMER_CYCLE 10          // chu kỳ ngắt TIM2 = 10ms
+#define TIMER_CYCLE 2          // Mỗi nhịp ngắt cơ sở tính là 10ms (TIM2 ngắt mỗi 10ms)
 int timer0_counter = 0;
 int timer0_flag = 0;
 
@@ -82,11 +81,11 @@ const int MAX_LED = 4;
 int index_led = 0;
 int led_buffer[4] = {1, 2, 3, 4};
 
-#define EN_ON   GPIO_PIN_SET     // nối thẳng, mức 1 = bật
-#define EN_OFF  GPIO_PIN_RESET   // mức 0 = tắt
+#define EN_ON   GPIO_PIN_RESET   // PNP high-side: mức 0 = bật
+#define EN_OFF  GPIO_PIN_SET     // PNP high-side: mức 1 = tắt
 
 void update7SEG(int index) {
-    // Tắt cả 4 LED trước khi đổi dữ liệu để tránh bóng mờ
+    // Tắt tất cả các LED trước khi đổi dữ liệu để tránh bóng mờ
     HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9, EN_OFF);
     switch (index) {
         case 0:
@@ -151,6 +150,8 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  __HAL_RCC_AFIO_CLK_ENABLE();
+  __HAL_AFIO_REMAP_SWJ_NOJTAG();   // tắt JTAG, giữ lại SWD để nạp/debug
   MX_TIM2_Init();
   /* USER CODE BEGIN 2 */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_6 | GPIO_PIN_7 | GPIO_PIN_8 | GPIO_PIN_9, EN_OFF);
@@ -248,7 +249,7 @@ static void MX_TIM2_Init(void)
   htim2.Instance = TIM2;
   htim2.Init.Prescaler = 7999;
   htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim2.Init.Period = 9;
+  htim2.Init.Period = 19;
   htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
@@ -322,19 +323,27 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-#define SCAN_PERIOD 250          // ms mỗi LED -> quét 4 LED ở 1Hz (Ex4)
-int scan_counter = SCAN_PERIOD / TIMER_CYCLE;
+int scan_display_counter = 0;
 
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     if (htim->Instance == TIM2) {
-        timer_run();             // chạy software timer
+        // 1. Chạy software timer (mỗi ngắt TIM2 tương ứng 10ms)
+        timer_run();
 
-        scan_counter--;
-        if (scan_counter <= 0) {
-            scan_counter = SCAN_PERIOD / TIMER_CYCLE;
-            update7SEG(index_led++);
-            if (index_led >= MAX_LED) index_led = 0;
+        // 2. Quét tuần tự 4 LED 7 đoạn
+        // Cứ mỗi lần ngắt TIM2 (10ms), ta chuyển sang 1 LED tiếp theo.
+        // Tổng thời gian quét 4 LED = 4 * 10ms = 40ms (tần số quét = 25Hz, mắt người thấy mượt, không chớp).
+        scan_display_counter++;
+        if (scan_display_counter >= 1) { // Đổi LED sau mỗi 10ms
+            scan_display_counter = 0;
+
+            update7SEG(index_led);
+
+            index_led++;
+            if (index_led >= MAX_LED) {
+                index_led = 0;
+            }
         }
     }
 }
