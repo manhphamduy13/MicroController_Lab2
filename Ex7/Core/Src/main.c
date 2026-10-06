@@ -50,7 +50,7 @@ void update7SEG(int index);
 /* Private user code --------------------------------------------------------- */
 /* USER CODE BEGIN 0 */
 /* ---------- Software timer ---------- */
-#define TIMER_CYCLE 2          // Mỗi nhịp ngắt cơ sở tính là 10ms (TIM2 ngắt mỗi 10ms)
+#define TIMER_CYCLE 1          // Mỗi nhịp ngắt cơ sở là 1ms (TIM2 ngắt mỗi 1ms)
 int timer0_counter = 0;
 int timer0_flag = 0;
 
@@ -328,14 +328,13 @@ int scan_display_counter = 0;
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
     if (htim->Instance == TIM2) {
-        // 1. Chạy software timer (mỗi ngắt TIM2 tương ứng 10ms)
+        // 1. Chạy software timer (mỗi ngắt TIM2 tương ứng 1ms)
         timer_run();
 
-        // 2. Quét tuần tự 4 LED 7 đoạn
-        // Cứ mỗi lần ngắt TIM2 (10ms), ta chuyển sang 1 LED tiếp theo.
-        // Tổng thời gian quét 4 LED = 4 * 10ms = 40ms (tần số quét = 25Hz, mắt người thấy mượt, không chớp).
+        // 2. Quét tuần tự 4 LED 7 đoạn.
+        // Mỗi LED sáng 1ms, một vòng 4 LED mất 4ms (250Hz).
         scan_display_counter++;
-        if (scan_display_counter >= 1) { // Đổi LED sau mỗi 10ms
+        if (scan_display_counter >= 1) { // Đổi LED sau mỗi 1ms
             scan_display_counter = 0;
 
             update7SEG(index_led);
