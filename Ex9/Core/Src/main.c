@@ -48,7 +48,7 @@ static void MX_TIM2_Init(void);
 /* USER CODE BEGIN 0 */
 
 /* ================= Dinh thoi quet ================= */
-#define SEG_SCAN_TICKS 5U    // 5 x 2 ms = 10 ms
+#define SEG_SCAN_TICKS 20U    // 5 x 2 ms = 10 ms
 #define CLOCK_TICKS 500U     // 500 x 2 ms = 1 s
 #define MATRIX_SCAN_TICKS 1U // Số nhịp ngắt để chuyển cột matrix (ví dụ: 1 hoặc 2 ms)
 static volatile uint16_t matrix_tick_count = 0;
