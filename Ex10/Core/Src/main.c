@@ -163,10 +163,9 @@ void shiftMatrixLeft(void)
   for (int i = 0; i < 8; i++)
   {
     // Cột 0 (COL0 - bit 0) ở ngoài cùng bên trái, Cột 7 (COL7 - bit 7) ở ngoài cùng bên phải.
-    // Điểm ảnh dịch sang trái: cột c -> cột c-1 (tức bit >> 1).
-    // Điểm ảnh ra khỏi cột 0 (bit 0) sẽ vòng lại cột 7 (bit 7) để lặp tuần hoàn.
-    uint8_t out_bit = matrix_buffer[i] & 0x01;
-    matrix_buffer[i] = (matrix_buffer[i] >> 1) | (out_bit << 7);
+    // Dịch trái 1 bit; bit 7 ra ngoài sẽ vòng lại bit 0 để lặp tuần hoàn.
+    uint8_t out_bit = (matrix_buffer[i] >> 7) & 0x01U;
+    matrix_buffer[i] = (uint8_t)((matrix_buffer[i] << 1) | out_bit);
   }
 }
 
